@@ -14,6 +14,9 @@ $VulStatusField = 'vulnerabilityStatus'
 # Create a Multi-Line custom field for the detailed output.
 $VulDetails = 'vulnerabilityDetails'
 
+# Add any CVEs you wish to ignore here.
+$ExcludeCVES = @('CVE-3000-123','CVE-3000-456')
+
 $registry_paths = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall', 'HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall'
 $vulMapScannerUri = 'https://vulmon.com/scannerapi_vv211'
 
@@ -133,7 +136,7 @@ function Get-JsonRequestBatches ($inventory) {
 function Resolve-RequestResponses ($responses) {
     $count = 0
     foreach ($response in $responses) {
-        foreach ($vuln in ($response | Select-Object -ExpandProperty results -ErrorAction SilentlyContinue)) {
+        foreach ($vuln in (($response | Select-Object -ExpandProperty results -ErrorAction SilentlyContinue) | where-object {$_.cveid -notin $ExcludeCVES})) {
             Write-Verbose "Parsing results from vulmon.com api."
             $interests = $vuln |
             Select-Object -Property query_string -ExpandProperty vulnerabilities |
