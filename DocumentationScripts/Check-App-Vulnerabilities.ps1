@@ -119,41 +119,6 @@ function Get-JsonRequestBatches ($inventory) {
             Uri    = $vulMapScannerUri
             Method = 'POST'
             Body   = @{ querydata = $json_request_data }
-        }
-
-        if ($Proxy) {
-            $webRequestSplat.Proxy = $Proxy
-        }
-
-        (Invoke-WebRequest @webRequestSplat).Content | ConvertFrom-Json
-    }
-}
-
-function Get-JsonRequestBatches ($inventory) {
-    $numberOfBatches = [math]::Ceiling(@($inventory).count / 100)
-
-    for ($i = 0; $i -lt $numberOfBatches; $i++) {
-        Write-Verbose "Submitting software to vulmon.com api, batch '$i' of '$numberOfBatches'."
-        $productList = $inventory |
-        Select-Object -First 100 |
-        ForEach-Object {
-            [pscustomobject]@{
-                product = $_.DisplayName
-                version = if ($_.DisplayVersion) { $_.DisplayVersion } else { '' }
-            }
-        }
-
-        $inventory = $inventory | Select-Object -Skip 100
-
-        $json_request_data = [ordered]@{
-            os           = (Get-CimInstance Win32_OperatingSystem -Verbose:$false).Caption
-            product_list = @($productList)
-        } | ConvertTo-Json
-
-        $webRequestSplat = @{
-            Uri    = $vulMapScannerUri
-            Method = 'POST'
-            Body   = @{ querydata = $json_request_data }
             UseBasicParsing = $True
         }
 
