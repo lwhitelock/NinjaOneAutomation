@@ -3,8 +3,10 @@
 # Date: 2023-03-18
 # Website: https://mspp.io
 # License: GPL-3.0
-# Details: This will look for any applications installed on a machine or in a user's profile and then check their version against the vulmnon.com database.
-# The results are written to customfields where conditions can be setup to create alerts.
+# Details: 
+# This will look for any applications installed on a machine or in a user's profile 
+# and then check their version against the vulmnon.com database. The results are 
+# written to custom fields where conditions can be setup to create alerts.
 
 # Create a Text custom field for the overall status:
 $VulStatusField = 'vulnerabilityStatus'
