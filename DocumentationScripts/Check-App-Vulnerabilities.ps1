@@ -136,10 +136,10 @@ function Get-JsonRequestBatches ($inventory) {
 function Resolve-RequestResponses ($responses) {
     $count = 0
     foreach ($response in $responses) {
-        foreach ($vuln in (($response | Select-Object -ExpandProperty results -ErrorAction SilentlyContinue) | where-object {$_.cveid -notin $ExcludeCVES})) {
+        foreach ($vuln in ($response | Select-Object -ExpandProperty results -ErrorAction SilentlyContinue)) {
             Write-Verbose "Parsing results from vulmon.com api."
             $interests = $vuln |
-            Select-Object -Property query_string -ExpandProperty vulnerabilities |
+            Select-Object -Property query_string -ExpandProperty vulnerabilities | where-object {$_.cveid -notin $ExcludeCVES} |
             ForEach-Object {
                 [PSCustomObject]@{
                     Product                = $_.query_string
