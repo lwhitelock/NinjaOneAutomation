@@ -172,7 +172,14 @@ function Invoke-VulnerabilityScan ($Inventory) {
         $null = Ninja-Property-Set $VulStatusField "No Vulnerabilities Detected - $(Get-Date)"
         $null = Ninja-Property-Set $VulDetails "$(@($inventory).count) items checked no vulnerabilities found."
     } else {
-        $VulnText = "$($vuln_list | Format-List | Out-String)"
+        $VulnText = ForEach ($Vul in $vuln_list){
+            if ($null -ne $Vul.'Risk Score'){
+                $Risk = $Vul.'Risk Score'
+            } else {
+                $Risk = 'Unknown'
+            }
+            "------------------------------------`rProduct: $($Vul.Name) - $($Vul.Version)`rCVE ID: $($Vul.'CVE ID')`rRisk Score: $($Risk)`rInstalled For: $($Vul.'Installed In')`rDetail: $($Vul.'Vulnerability Detail')`r"
+        } -join ''
         Write-Host  "$($vuln_list.Count) Vulnerabilities Found"
         $null = Ninja-Property-Set $VulStatusField "$($vuln_list.Count) Vulnerabilities Found - $(Get-Date)"
         $null = Ninja-Property-Set $VulDetails $VulnText
