@@ -1,3 +1,8 @@
+# Author: Luke Whitelock
+# Date: 2023-04-07
+# License: MIT
+# Details: https://mspp.io/ninjaone-device-alert-heat-map/
+
 $Secret = Get-AzKeyVaultSecret -vaultName $VaultName -name "NinjaOneSecret" -AsPlainText
 $ClientID = Get-AzKeyVaultSecret -vaultName $VaultName -name "NinjaOneClientID" -AsPlainText
 $NinjaURL = 'https://eu.ninjarmm.com'
