@@ -3,6 +3,8 @@
 # License: MIT
 # Details: https://mspp.io/ninjaone-device-alert-heat-map/
 
+$VaultName = 'Your-KV'
+
 $Secret = Get-AzKeyVaultSecret -vaultName $VaultName -name "NinjaOneSecret" -AsPlainText
 $ClientID = Get-AzKeyVaultSecret -vaultName $VaultName -name "NinjaOneClientID" -AsPlainText
 $NinjaURL = 'https://eu.ninjarmm.com'
