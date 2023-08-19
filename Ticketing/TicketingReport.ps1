@@ -2,7 +2,7 @@
 # Author: Luke Whitelock
 # Date: 2023-08-19
 # Please note this is not an official NinjaOne Script, please report any problems in GitHub
-# 
+# https://github.com/lwhitelock/NinjaOneAutomation/issues
 
 # Create a machine to machine API application with montitoring and management enabled and client_credentials enabled.
 # Set the ID and Secret here: 
