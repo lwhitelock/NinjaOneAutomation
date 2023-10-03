@@ -6,8 +6,8 @@
 
 # Create a machine to machine API application with montitoring and management enabled and client_credentials enabled.
 # Set the ID and Secret here: 
-$Script:ClientID = Read-Host "Enter you NinjaOne Client Application ID"
-$Script:Secret = Read-Host "Enter you NinjaOne Client Application Secret"
+$Script:ClientID = 'Your NinjaOne Client Application ID'
+$Script:Secret = 'Your NinjaOne Client Application Secret'
 
 # Set the NinjaOne Instance you use eg eu.ninjarmm.com, app.ninjarmm.com, ca.ninjarmm.com, oc.ninjarmm.com
 $Script:Instance = 'app.ninjarmm.com'
