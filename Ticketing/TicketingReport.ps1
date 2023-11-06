@@ -252,8 +252,7 @@ function Connect-NinjaOne {
 function Get-NinjaRequest($Path, $Method, $Body) {
     if ($Body) {
         Return (Invoke-WebRequest -uri "https://$($Instance)$($Path)" -Method $Method -Headers $Script:AuthHeader -ContentType 'application/json' -Body $Body).content | ConvertFrom-Json    
-    }
-    else {
+    } else {
         Return (Invoke-WebRequest -uri "https://$($Instance)$($Path)" -Method $Method -Headers $Script:AuthHeader -ContentType 'application/json').content | ConvertFrom-Json
     }
 }
@@ -299,8 +298,7 @@ Function Get-NinjaOneTickets($FromUnix, $ToUnix) {
         $FetchedTickets = Get-NinjaTickets -LastCursor $LastCursor -PageSize 1000
         if (($FetchedTickets.data[-1].lastUpdated -lt $FromUnix) -or (($FetchedTickets.data | Measure-Object).count -eq 0)) {
             $Found = $True
-        }
-        else {
+        } else {
             $LastCursor = $FetchedTickets.metadata.lastCursorId
         }
         $FetchedTickets.data
@@ -319,8 +317,7 @@ Function Get-NinjaOneTickets($FromUnix, $ToUnix) {
         $Ticket = Get-NinjaRequest -Path "/v2/ticketing/ticket/$($TicketItem.id)" -Method GET
         if ($TicketItem.totalTimeTracked -gt 0) {
             $TicketLogs = Get-NinjaRequest -Path "/v2/ticketing/ticket/$($TicketItem.id)/log-entry" -Method GET
-        }
-        else {
+        } else {
             $TicketLogs = $null
         }
     
@@ -328,8 +325,7 @@ Function Get-NinjaOneTickets($FromUnix, $ToUnix) {
         $TimeEntryUsers = ($TicketLogs | Where-Object { $_.timeTracked -gt 0 } | Select-Object -unique appUserContactUid).appUserContactUid
         if (($TimeEntryUsers | measure-object).count -eq 1 ) {
             $TimeEntryUser = $TimeEntryUsers
-        }
-        else {
+        } else {
             $TimeEntryUser = $Null
         }
     
@@ -363,24 +359,25 @@ Function Get-NinjaOneTickets($FromUnix, $ToUnix) {
 Function Invoke-NinjaOneUserMapping {
     # Try to figure out UIDs to User ID based on tickets where only one person has made time entries and then looking at the ticket assignee.
     $UserMappingData = $Script:Tickets | where-object { $Null -ne $_.TimeEntryUID -and $Null -ne $_.assignedAppUserID } | Select-Object assignedAppUserID, TimeEntryUID, @{n = 'Merged'; e = { "$($_.assignedAppUserID)|$($_.TimeEntryUID)" } } | Group-Object Merged | Sort-Object Count -Descending
-    [System.Collections.Generic.List[PSCustomObject]]$Script:UserMap = Foreach ($AssignedUser in ($Script:Tickets.assignedAppUserID | Select-Object -unique)) {
+    [System.Collections.Generic.List[PSCustomObject]]$Script:UserMap = @()
+    Foreach ($AssignedUser in ($Script:Tickets.assignedAppUserID | Select-Object -unique)) {
         $UID = $UserMappingData | Where-Object { ($_.Name -split '\|')[0] -eq $AssignedUser -and $_.count -gt 1 }
         if (($UID | Measure-Object).count -eq 1) {
             $User = $Script:Users | Where-Object { $_.id -eq $AssignedUser }
 
-            [PSCustomObject]@{
-                ID    = $AssignedUser
-                Name  = "$($User.firstName) $($User.lastName)"
-                Email = $User.email
-                UID   = ($UID.Name -split '\|')[1]
-            }
+            $Script:UserMap.add([PSCustomObject]@{
+                    ID    = $AssignedUser
+                    Name  = "$($User.firstName) $($User.lastName)"
+                    Email = $User.email
+                    UID   = ($UID.Name -split '\|')[1]
+                })
 
         }
     }
 
-    if ($Script:UserMapLoaded){
-    $Script:UserMapFiltered = $Script:UserMap | Where-Object {$_.ID -notin $Script:UserMapLoaded.ID}
-    $Script:UserMap = $Script:UserMapFiltered + $Script:UserMapLoaded
+    if ($Script:UserMapLoaded) {
+        $Script:UserMapFiltered = $Script:UserMap | Where-Object { $_.ID -notin $Script:UserMapLoaded.ID }
+        $Script:UserMap = $Script:UserMapFiltered + $Script:UserMapLoaded
     }
     
 }
@@ -580,13 +577,12 @@ Function Get-NinjaOneUserSelect {
 
 function Set-NinjaUserMap ($ID, $UID) {
     $UpdateUserMap = $Script:UserMap | Where-Object { $_.UID -eq $UID }
-    $UserDetails = $Script:Users | Where-Object { $_.ID -eq $ID }
+    $UserDetails = $Script:Users | Where-Object { $_.id -eq $ID }
     if (($UpdateUserMap | Measure-Object).count -eq 1) {
         $UpdateUserMap.ID = $UserDetails.id
         $UpdateUserMap.Name = "$($UserDetails.firstName) $($UserDetails.lastName)"
         $UpdateUserMap.Email = $UserDetails.email
-    }
-    else {
+    } else {
         $Script:UserMap.add(
             [PSCustomObject]@{
                 ID    = $UserDetails.id
@@ -1027,8 +1023,7 @@ $loginButton.Add_Click({
 
         if ($Script:ContentCount -ne 0 ) {
             Get-TechContent
-        }
-        else {
+        } else {
             Get-SummaryContent
         }
        
@@ -1096,8 +1091,7 @@ $nextButton.Add_Click({
         # If there's another content set, load it, otherwise close the form
         if ($script:currentContentIndex -lt $Script:contents.Count) {
             Get-TechContent
-        }
-        else {
+        } else {
             Get-SummaryContent
         }
 
