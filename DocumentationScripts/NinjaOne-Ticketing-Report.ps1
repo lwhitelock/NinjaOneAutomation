@@ -41,7 +41,7 @@ try {
 
     # Set the location for the ticketing report to be saved. By default it will be saved to the folder where
     # the script is run, with the current date appended.
-    $OutputToFile = $True
+    $OutputToFile = $False
     $Date = Get-Date -Format "yyyy-MM-dd"
     $Output_File = "C:\Temp\$($Date)_Ticketing_Report.html"
 
