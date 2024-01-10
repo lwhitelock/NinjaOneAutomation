@@ -489,7 +489,7 @@ try {
 
     }
 
-    $OutputHtml = @"
+    $FileHtml = @"
     <html>
     <head>
           <meta charset="utf-8">
@@ -929,12 +929,13 @@ try {
         </style></head>
         <body>
         $OutputHTML
+        $($Script:OrganizationHTML)
         </body>
 </html>
 "@
 
     if ($OutputToFile -eq $True) {
-        $OutputHTML + $Script:OrganizationHTML | Out-File $Output_File
+        [System.Web.HttpUtility]::HtmlDecode($FileHTML) | Out-File $Output_File
     }
 
     Write-Output "$(Get-Date): Complete Total Runtime: $((New-TimeSpan -Start $ScriptStart -End (Get-Date)).TotalSeconds) seconds"
