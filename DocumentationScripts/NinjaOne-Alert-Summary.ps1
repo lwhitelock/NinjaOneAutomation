@@ -23,19 +23,50 @@ try {
     $ExecutionContext.SessionState.LanguageMode = 'FullLanguage'
 
 
-
-    function Get-AlertsTable ($Alerts, $MaxChars) {
+    function Get-AlertsTable ($Alerts, $MaxChars, $CountAlerts) {
         [System.Collections.Generic.List[string]]$ParsedTable = @()
+      
+        [System.Collections.Generic.List[PSCustomObject]]$WidgetData = @()
+        $WidgetData.add([PSCustomObject]@{
+                Value       = '<i class="fas fa-circle-xmark"></i>&nbsp;&nbsp;' + $(($CountAlerts | Where-Object { $_.Severity -eq 'CRITICAL' } | Measure-Object).count)
+                Description = 'Critical'
+                Colour      = '#D53948'
+            })
+        $WidgetData.add([PSCustomObject]@{
+                Value       = '<i class="fas fa-triangle-exclamation"></i>&nbsp;&nbsp;' + $(($CountAlerts | Where-Object { $_.Severity -eq 'MAJOR' } | Measure-Object).count)
+                Description = 'Major'
+                Colour      = '#FAC905'
+            })
+        $WidgetData.add([PSCustomObject]@{
+                Value       = '<i class="fas fa-circle-exclamation"></i>&nbsp;&nbsp;' + $(($CountAlerts | Where-Object { $_.Severity -eq 'MODERATE' } | Measure-Object).count)
+                Description = 'Moderate'
+                Colour      = '#337AB7'
+            })
+        $WidgetData.add([PSCustomObject]@{
+                Value       = '<i class="fas fa-circle-exclamation"></i>&nbsp;&nbsp;' + $(($CountAlerts | Where-Object { $_.Severity -eq 'MINOR' } | Measure-Object).count)
+                Description = 'Minor'
+                Colour      = '#949597'
+            })
+        $WidgetData.add([PSCustomObject]@{
+                Value       = '<i class="fas fa-circle-info"></i>&nbsp;&nbsp;' + $(($CountAlerts | Where-Object { $_.Severity -eq 'NONE' } | Measure-Object).count)
+                Description = 'None'
+                Colour      = '#949597'
+            })
+        
+
+        $WidgetHTML = (Get-NinjaOneWidgetCard -Data $WidgetData -SmallCols 3 -MedCols 3 -LargeCols 5 -XLCols 5 -NoCard)
+        $ParsedTable.add($WidgetHTML)
         $ParsedTable.add('<table>')
-        $ParsedTable.add('<tr><th>Created</th><th>Device</th><th>Organization</th><th style="white-space: nowrap;">Severity</th><th style="white-space: nowrap;">Priority</th><th style="white-space: nowrap;">Last 30 Days</th><th>Message</th></tr>')
+        $ParsedTable.add('<tr><th>Created</th><th></th><th>Device</th><th>Organization</th><th style="white-space: nowrap;">Severity</th><th style="white-space: nowrap;">Priority</th><th style="white-space: nowrap;">Last 30 Days</th><th>Message</th></tr>')
 
         foreach ($ParsedAlert in $Alerts) {
             $HTML = '<tr class="' + $ParsedAlert.RowClass + '">' +
             '<td style="white-space: nowrap;">' + ($ParsedAlert.Created).ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss") + '</td>' +
+            '<td style="white-space: nowrap;"><i style="color: ' + $ParsedAlert.OnlineColour + ';" class="' + $ParsedAlert.OnlineIcon + '"></i></td>' +
             '<td style="white-space: nowrap;"><a href="https://' + $NinjaOneInstance + '/#/deviceDashboard/' + $ParsedAlert.DeviceID + '/overview">' + $ParsedAlert.Device + '</a></td>' +
             '<td style="white-space: nowrap;"><a href="https://' + $NinjaOneInstance + '/#/customerDashboard/' + $ParsedAlert.OrgID + '/overview">' + $ParsedAlert.OrgName + '</a></td>' +
             '<td style="white-space: nowrap;"><i style="color: ' + $ParsedAlert.SeverityColour + ';" class="' + $ParsedAlert.SeverityIcon + '"></i> ' + (Get-Culture).TextInfo.ToTitleCase($ParsedAlert.Severity.ToLower()) + '</td>' +
-            '<td style="white-space: nowrap;"><i style="color: ' + $ParsedAlert.PriorityColour + ';" class="' + $ParsedAlert.PriorityIcon + '"></i> ' + (Get-Culture).TextInfo.ToTitleCase($ParsedAlert.Priority.ToLower()) + '</td>' +
+            '<td style="white-space: nowrap;"><i style="color: ' + $ParsedAlert.PiorityColour + ';" class="' + $ParsedAlert.PiorityIcon + '"></i> ' + (Get-Culture).TextInfo.ToTitleCase($ParsedAlert.Piority.ToLower()) + '</td>' +
             '<td style="white-space: nowrap;">' + $ParsedAlert.Last30Days + '</td>' +
             '<td>' + ($ParsedAlert.Message).Substring(0, [Math]::Min(($ParsedAlert.Message).Length, $MaxChars)) + '</td>' + '</tr>'
 
@@ -99,6 +130,14 @@ try {
             $AssociatedTriggers = $Activities | Where-Object { $_.sourceConfigUid -eq $Alert.sourceConfigUid -and $_.deviceId -eq $Alert.deviceId }
             $AlertDevice = $Devices | Where-Object { $_.id -eq $Alert.deviceId }
             $AlertLocation = $Locations | Where-Object { $_.id -eq $AlertDevice.locationId }
+            
+            if ($AlertDevice.offline -eq $True) {
+                $OnlineColour = '#949597'
+                $OnlineIcon = 'fas fa-plug'
+            } else {
+                $OnlineColour = '#26a644'
+                $OnlineIcon = 'fas fa-plug'
+            }
 
             Switch ($CurrentActivity.severity) {
                 'CRITICAL' { $SeverityIcon = 'fas fa-circle-xmark'; $SeverityColour = '#D53948'; $SeverityScore = 5; $RowClass = 'danger' }
@@ -110,11 +149,11 @@ try {
             }
 
             Switch ($CurrentActivity.priority) {
-                'HIGH' { $PriorityIcon = 'fas fa-circle-arrow-up'; $PriorityColour = '#D53948'; $PriorityScore = 5 }
-                'MEDIUM' { $PriorityIcon = 'fas fa-circle-arrow-right'; $PriorityColour = '#FAC905'; $PriorityScore = 4 }
-                'LOW' { $PriorityIcon = 'fas fa-circle-arrow-down'; $PriorityColour = '#337AB7'; $PriorityScore = 3 }
-                'NONE' { $PriorityIcon = 'fas fa-circle-info'; $PriorityColour = '#949597'; $PriorityScore = 2 }
-                default { $PriorityIcon = 'fas fa-circle-info'; $PriorityColour = '#949597'; $PriorityScore = 2 }
+                'HIGH' { $PiorityIcon = 'fas fa-circle-arrow-up'; $PiorityColour = '#D53948'; $PiorityScore = 5 }
+                'MEDIUM' { $PiorityIcon = 'fas fa-circle-arrow-right'; $PiorityColour = '#FAC905'; $PiorityScore = 4 }
+                'LOW' { $PiorityIcon = 'fas fa-circle-arrow-down'; $PiorityColour = '#337AB7'; $PiorityScore = 3 }
+                'NONE' { $PiorityIcon = 'fas fa-circle-info'; $PiorityColour = '#949597'; $PiorityScore = 2 }
+                default { $PiorityIcon = 'fas fa-circle-info'; $PiorityColour = '#949597'; $PiorityScore = 2 }
             }
 
 
@@ -166,19 +205,21 @@ try {
                     Updated        = Get-TimeFromNinjaOne -Date $Alert.updateTime -seconds
                     Device         = $AlertDevice.systemName
                     DeviceID       = $AlertDevice.id
+                    OnlineIcon     = $OnlineIcon
+                    OnlineColour   = $OnlineColour
                     OrgName        = $Org.name
                     OrgID          = $Org.id
                     LocName        = $AlertLocation.name
                     LocID          = $AlertLocation.id
                     Message        = $Alert.message
                     Severity       = if ($CurrentActivity.severity) { $CurrentActivity.severity } else { 'None' }
-                    Priority       = if ($CurrentActivity.priority) { $CurrentActivity.priority } else { 'None' }
+                    Piority        = if ($CurrentActivity.priority) { $CurrentActivity.priority } else { 'None' }
                     SeverityIcon   = $SeverityIcon 
                     SeverityColour = $SeverityColour
                     SeverityScore  = $SeverityScore
-                    PriorityIcon   = $PriorityIcon
-                    PriorityColour = $PriorityColour
-                    PriorityScore  = $PriorityScore
+                    PiorityIcon    = $PiorityIcon
+                    PiorityColour  = $PiorityColour
+                    PiorityScore   = $PiorityScore
                     RowClass       = $RowClass
                     TotalCount     = $TotalCount
                     Last30Days     = $HTMLHistory
@@ -187,7 +228,8 @@ try {
 
         }
 
-        $ParsedTable = Get-AlertsTable -Alerts ($ParsedAlerts | Where-object { $_.OrgID -eq $Org.id } | Sort-Object SeverityScore, PriorityScore, Created -Descending)  -MaxChars 300
+        $OrgAlertsTable = ($ParsedAlerts | Where-object { $_.OrgID -eq $Org.id } | Sort-Object SeverityScore, PiorityScore, Created -Descending)
+        $ParsedTable = Get-AlertsTable -Alerts $OrgAlertsTable -CountAlerts $OrgAlertsTable  -MaxChars 300
         
         $OrgUpdate = [PSCustomObject]@{
             "$SummaryField" = @{'html' = "$($ParsedTable -join '')" }
@@ -200,7 +242,7 @@ try {
     Write-Output "$(Get-Date): Generating Global View"
     # Set Global View
     $OverviewMatch = $Organizations | Where-Object { $_.name -eq $OverviewCompany }
-    $ParsedTable = Get-AlertsTable -Alerts ($ParsedAlerts  | Where-Object { $_.SeverityScore -ge 4 } | Sort-Object SeverityScore, PriorityScore, Created -Descending) -MaxChars 100
+    $ParsedTable = Get-AlertsTable -Alerts ($ParsedAlerts | Sort-Object SeverityScore, PiorityScore, Created -Descending | select-object -first 100) -MaxChars 100 -CountAlerts $ParsedAlerts
     $OrgUpdate = [PSCustomObject]@{
         "$SummaryField" = @{'html' = "$($ParsedTable -join '')" }
     }
@@ -210,7 +252,8 @@ try {
     Write-Output "$(Get-Date): Processing Devices"
     # Set Each Device
     Foreach ($UpdateDevice in $Devices) {
-        $ParsedTable = Get-AlertsTable -MaxChars 300 -Alerts ($ParsedAlerts | Where-object { $_.DeviceID -eq $UpdateDevice.id } | Sort-Object SeverityScore, PriorityScore, Created -Descending) 
+        $DeviceAlerts = ($ParsedAlerts | Where-object { $_.DeviceID -eq $UpdateDevice.id } | Sort-Object SeverityScore, PiorityScore, Created -Descending)
+        $ParsedTable = Get-AlertsTable -MaxChars 300 -Alerts $DeviceAlerts -CountAlerts $DeviceAlerts
         $DeviceUpdate = [PSCustomObject]@{
             "$SummaryField" = @{'html' = "$($ParsedTable -join '')" }
         }
