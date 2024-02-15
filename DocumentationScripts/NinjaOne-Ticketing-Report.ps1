@@ -388,14 +388,18 @@ try {
         
     }
 
-    if (!(Get-Module -Name "NinjaOneDocs")) {
-        $Null = Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
-        Install-Module -Name 'NinjaOneDocs' -Force -RequiredVersion 1.6.0 -Scope CurrentUser
-        Import-Module 'NinjaOneDocs'
+     $moduleName = "NinjaOneDocs"
+    if (-not (Get-Module -ListAvailable -Name $moduleName)) {
+        Install-Module -Name $moduleName -Force -AllowClobber
     } else {
-        Update-Module NinjaOneDocs -RequiredVersion 1.6.0 -Force
-        Import-Module 'NinjaOneDocs'
+        $latestVersion = (Find-Module -Name $moduleName).Version
+        $installedVersion = (Get-Module -ListAvailable -Name $moduleName).Version | Sort-Object -Descending | Select-Object -First 1
+
+        if ($installedVersion -ne $latestVersion) {
+            Update-Module -Name $moduleName -Force
+        }
     }
+    Import-Module $moduleName
 
 
     Switch ($Mode) {
