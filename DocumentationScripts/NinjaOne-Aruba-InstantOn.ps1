@@ -91,14 +91,18 @@ try {
     [System.Collections.Generic.List[PSCustomObject]]$NinjaDocCreation = @()
     [System.Collections.Generic.List[PSCustomObject]]$NinjaRelationMap = @()
 
-    if (!(Get-Module -Name "NinjaOneDocs")) {
-        $Null = Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
-        Install-Module -Name 'NinjaOneDocs' -Force -MaximumVersion 1.2.0
-        Import-Module 'NinjaOneDocs'
+     $moduleName = "NinjaOneDocs"
+    if (-not (Get-Module -ListAvailable -Name $moduleName)) {
+        Install-Module -Name $moduleName -Force -AllowClobber
     } else {
-        Update-Module NinjaOneDocs -MaximumVersion 1.2.0 -Force
-        Import-Module 'NinjaOneDocs'
+        $latestVersion = (Find-Module -Name $moduleName).Version
+        $installedVersion = (Get-Module -ListAvailable -Name $moduleName).Version | Sort-Object -Descending | Select-Object -First 1
+
+        if ($installedVersion -ne $latestVersion) {
+            Update-Module -Name $moduleName -Force
+        }
     }
+    Import-Module $moduleName
 
 
 
