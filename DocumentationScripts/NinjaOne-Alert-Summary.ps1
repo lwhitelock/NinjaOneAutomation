@@ -8,24 +8,12 @@ $NinjaOneClientSecret = Ninja-Property-Get ninjaoneClientSecret
 $OverviewCompany = 'Global Overview'
 $SummaryField = 'deviceAlertSummary'
 
-try {
+function Get-AlertsTable ($Alerts, $MaxChars, $CountAlerts) {
 
-    if (!(Get-Module -Name "NinjaOneDocs")) {
-        $Null = Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
-        Install-Module -Name 'NinjaOneDocs' -Force -MinimumVersion 1.1.0
-        Import-Module 'NinjaOneDocs'
-    } else {
-        Update-Module NinjaOneDocs -Force
-        Import-Module 'NinjaOneDocs'
-    }
+    [System.Collections.Generic.List[string]]$ParsedTable = @()
 
-    # Fix for PSCustomObjects being broken in 7.4.0
-    $ExecutionContext.SessionState.LanguageMode = 'FullLanguage'
-
-
-    function Get-AlertsTable ($Alerts, $MaxChars, $CountAlerts) {
-        [System.Collections.Generic.List[string]]$ParsedTable = @()
-      
+    if (($CountAlerts | Measure-Object).count -gt 0) {
+  
         [System.Collections.Generic.List[PSCustomObject]]$WidgetData = @()
         $WidgetData.add([PSCustomObject]@{
                 Value       = '<i class="fas fa-circle-xmark"></i>&nbsp;&nbsp;' + $(($CountAlerts | Where-Object { $_.Severity -eq 'CRITICAL' } | Measure-Object).count)
@@ -52,7 +40,7 @@ try {
                 Description = 'None'
                 Colour      = '#949597'
             })
-        
+    
 
         $WidgetHTML = (Get-NinjaOneWidgetCard -Data $WidgetData -SmallCols 3 -MedCols 3 -LargeCols 5 -XLCols 5 -NoCard)
         $ParsedTable.add($WidgetHTML)
@@ -66,7 +54,7 @@ try {
             '<td style="white-space: nowrap;"><a href="https://' + $NinjaOneInstance + '/#/deviceDashboard/' + $ParsedAlert.DeviceID + '/overview">' + $ParsedAlert.Device + '</a></td>' +
             '<td style="white-space: nowrap;"><a href="https://' + $NinjaOneInstance + '/#/customerDashboard/' + $ParsedAlert.OrgID + '/overview">' + $ParsedAlert.OrgName + '</a></td>' +
             '<td style="white-space: nowrap;"><i style="color: ' + $ParsedAlert.SeverityColour + ';" class="' + $ParsedAlert.SeverityIcon + '"></i> ' + (Get-Culture).TextInfo.ToTitleCase($ParsedAlert.Severity.ToLower()) + '</td>' +
-            '<td style="white-space: nowrap;"><i style="color: ' + $ParsedAlert.PriorityColour + ';" class="' + $ParsedAlert.PriorityIcon + '"></i> ' + (Get-Culture).TextInfo.ToTitleCase($ParsedAlert.Priority.ToLower()) + '</td>' +
+            '<td style="white-space: nowrap;"><i style="color: ' + $ParsedAlert.PiorityColour + ';" class="' + $ParsedAlert.PiorityIcon + '"></i> ' + (Get-Culture).TextInfo.ToTitleCase($ParsedAlert.Piority.ToLower()) + '</td>' +
             '<td style="white-space: nowrap;">' + $ParsedAlert.Last30Days + '</td>' +
             '<td>' + ($ParsedAlert.Message).Substring(0, [Math]::Min(($ParsedAlert.Message).Length, $MaxChars)) + '</td>' + '</tr>'
 
@@ -74,10 +62,37 @@ try {
         }
 
         $ParsedTable.add('</table>')
-
-        Return $ParsedTable
+    } else {
+        [System.Collections.Generic.List[PSCustomObject]]$WidgetData = @()
+        $WidgetData.add([PSCustomObject]@{
+                Value       = '<i class="fas fa-circle-check"></i>'
+                Description = 'No Alerts'
+                Colour      = '#26a644'
+            })
+        $WidgetHTML = (Get-NinjaOneWidgetCard -Data $WidgetData -SmallCols 3 -MedCols 3 -LargeCols 5 -XLCols 5 -NoCard)
+        $ParsedTable.add($WidgetHTML)
     }
 
+    Return $ParsedTable
+}
+
+try {
+
+    $moduleName = "NinjaOneDocs"
+    if (-not (Get-Module -ListAvailable -Name $moduleName)) {
+        Install-Module -Name $moduleName -Force -AllowClobber
+    } else {
+        $latestVersion = (Find-Module -Name $moduleName).Version
+        $installedVersion = (Get-Module -ListAvailable -Name $moduleName).Version | Sort-Object -Descending | Select-Object -First 1
+
+        if ($installedVersion -ne $latestVersion) {
+            Update-Module -Name $moduleName -Force
+        }
+    }
+    Import-Module $moduleName
+
+    # Fix for PSCustomObjects being broken in 7.4.0
+    $ExecutionContext.SessionState.LanguageMode = 'FullLanguage'
 
     Connect-NinjaOne -NinjaOneInstance $NinjaOneInstance -NinjaOneClientID $NinjaOneClientID -NinjaOneClientSecret $NinjaOneClientSecret
     Write-Output "$(Get-Date): Fetching Core Data"
@@ -85,6 +100,7 @@ try {
     $Devices = Invoke-NinjaOneRequest -Method GET -Path 'devices' -Paginate
     $Organizations = Invoke-NinjaOneRequest -Method GET -Path 'organizations' -Paginate
     $Locations = Invoke-NinjaOneRequest -Method GET -Path 'locations' -Paginate
+    $CurrentAlerts = (Invoke-NinjaOneRequest -Method GET -Path 'queries/scoped-custom-fields' -QueryParams "fields=$SummaryField" -Paginate).results
 
 
     Write-Output "$(Get-Date): Fetching Activities"
@@ -149,11 +165,11 @@ try {
             }
 
             Switch ($CurrentActivity.priority) {
-                'HIGH' { $PriorityIcon = 'fas fa-circle-arrow-up'; $PriorityColour = '#D53948'; $PriorityScore = 5 }
-                'MEDIUM' { $PriorityIcon = 'fas fa-circle-arrow-right'; $PriorityColour = '#FAC905'; $PriorityScore = 4 }
-                'LOW' { $PriorityIcon = 'fas fa-circle-arrow-down'; $PriorityColour = '#337AB7'; $PriorityScore = 3 }
-                'NONE' { $PriorityIcon = 'fas fa-circle-info'; $PriorityColour = '#949597'; $PriorityScore = 2 }
-                default { $PriorityIcon = 'fas fa-circle-info'; $PriorityColour = '#949597'; $PriorityScore = 2 }
+                'HIGH' { $PiorityIcon = 'fas fa-circle-arrow-up'; $PiorityColour = '#D53948'; $PiorityScore = 5 }
+                'MEDIUM' { $PiorityIcon = 'fas fa-circle-arrow-right'; $PiorityColour = '#FAC905'; $PiorityScore = 4 }
+                'LOW' { $PiorityIcon = 'fas fa-circle-arrow-down'; $PiorityColour = '#337AB7'; $PiorityScore = 3 }
+                'NONE' { $PiorityIcon = 'fas fa-circle-info'; $PiorityColour = '#949597'; $PiorityScore = 2 }
+                default { $PiorityIcon = 'fas fa-circle-info'; $PiorityColour = '#949597'; $PiorityScore = 2 }
             }
 
 
@@ -213,13 +229,13 @@ try {
                     LocID          = $AlertLocation.id
                     Message        = $Alert.message
                     Severity       = if ($CurrentActivity.severity) { $CurrentActivity.severity } else { 'None' }
-                    Priority        = if ($CurrentActivity.priority) { $CurrentActivity.priority } else { 'None' }
+                    Piority        = if ($CurrentActivity.priority) { $CurrentActivity.priority } else { 'None' }
                     SeverityIcon   = $SeverityIcon 
                     SeverityColour = $SeverityColour
                     SeverityScore  = $SeverityScore
-                    PriorityIcon    = $PriorityIcon
-                    PriorityColour  = $PriorityColour
-                    PriorityScore   = $PriorityScore
+                    PiorityIcon    = $PiorityIcon
+                    PiorityColour  = $PiorityColour
+                    PiorityScore   = $PiorityScore
                     RowClass       = $RowClass
                     TotalCount     = $TotalCount
                     Last30Days     = $HTMLHistory
@@ -228,37 +244,55 @@ try {
 
         }
 
-        $OrgAlertsTable = ($ParsedAlerts | Where-object { $_.OrgID -eq $Org.id } | Sort-Object SeverityScore, PriorityScore, Created -Descending)
+        $OrgAlertsTable = ($ParsedAlerts | Where-object { $_.OrgID -eq $Org.id } | Sort-Object SeverityScore, PiorityScore, Created -Descending)
         $ParsedTable = Get-AlertsTable -Alerts $OrgAlertsTable -CountAlerts $OrgAlertsTable  -MaxChars 300
         
-        $OrgUpdate = [PSCustomObject]@{
-            "$SummaryField" = @{'html' = "$($ParsedTable -join '')" }
-        }
 
-        $Null = Invoke-NinjaOneRequest -Method PATCH -Path "organization/$($Org.id)/custom-fields" -InputObject $OrgUpdate
+        $OrgHTML = "$($ParsedTable -join '')"
+        
+        $CurrentAlert = $CurrentAlerts | Where-Object { $_.scope -eq 'ORGANIZATION' -and $_.entityId -eq $Org.id }
+        if (($CurrentAlert.fields."$SummaryField".html -replace '<[^>]+>', '') -ne ($OrgHTML -replace '<[^>]+>', '')) {
+            $OrgUpdate = [PSCustomObject]@{
+                "$SummaryField" = @{'html' = $OrgHTML }
+            }
+            $Null = Invoke-NinjaOneRequest -Method PATCH -Path "organization/$($Org.id)/custom-fields" -InputObject $OrgUpdate
+        }      
 
     }
 
     Write-Output "$(Get-Date): Generating Global View"
     # Set Global View
     $OverviewMatch = $Organizations | Where-Object { $_.name -eq $OverviewCompany }
-    $ParsedTable = Get-AlertsTable -Alerts ($ParsedAlerts | Sort-Object SeverityScore, PriorityScore, Created -Descending | select-object -first 100) -MaxChars 100 -CountAlerts $ParsedAlerts
-    $OrgUpdate = [PSCustomObject]@{
-        "$SummaryField" = @{'html' = "$($ParsedTable -join '')" }
+    if (($OverviewMatch | Measure-Object).count -eq 1) {
+        $ParsedTable = Get-AlertsTable -Alerts ($ParsedAlerts | Sort-Object SeverityScore, PiorityScore, Message, Created -Descending | select-object -first 100) -MaxChars 100 -CountAlerts $ParsedAlerts
+        $GlobalHTML = "$($ParsedTable -join '')"
+        
+        $CurrentAlert = $CurrentAlerts | Where-Object { $_.scope -eq 'ORGANIZATION' -and $_.entityId -eq $OverviewMatch.id }
+        if (($CurrentAlert.fields."$SummaryField".html -replace '<[^>]+>', '') -ne ($GlobalHTML -replace '<[^>]+>', '')) {
+            $OrgUpdate = [PSCustomObject]@{
+                "$SummaryField" = @{'html' = $GlobalHTML }
+            }
+            $Null = Invoke-NinjaOneRequest -Method PATCH -Path "organization/$($OverviewMatch.id)/custom-fields" -InputObject $OrgUpdate
+        }
+        
     }
-
-    $Null = Invoke-NinjaOneRequest -Method PATCH -Path "organization/$($OverviewMatch.id)/custom-fields" -InputObject $OrgUpdate
 
     Write-Output "$(Get-Date): Processing Devices"
     # Set Each Device
     Foreach ($UpdateDevice in $Devices) {
-        $DeviceAlerts = ($ParsedAlerts | Where-object { $_.DeviceID -eq $UpdateDevice.id } | Sort-Object SeverityScore, PriorityScore, Created -Descending)
+        $DeviceAlerts = ($ParsedAlerts | Where-object { $_.DeviceID -eq $UpdateDevice.id } | Sort-Object SeverityScore, PiorityScore, Created -Descending)
         $ParsedTable = Get-AlertsTable -MaxChars 300 -Alerts $DeviceAlerts -CountAlerts $DeviceAlerts
-        $DeviceUpdate = [PSCustomObject]@{
-            "$SummaryField" = @{'html' = "$($ParsedTable -join '')" }
-        }
+        $DeviceHTML = "$($ParsedTable -join '')"
 
-        $Null = Invoke-NinjaOneRequest -Method PATCH -Path "device/$($UpdateDevice.id)/custom-fields" -InputObject $DeviceUpdate
+        $CurrentAlert = $CurrentAlerts | Where-Object { $_.scope -eq 'NODE' -and $_.entityId -eq $UpdateDevice.id }
+
+        if (($CurrentAlert.fields."$SummaryField".html -replace '<[^>]+>', '') -ne ($DeviceHTML -replace '<[^>]+>', '')) {
+            $DeviceUpdate = [PSCustomObject]@{
+                "$SummaryField" = @{'html' = $DeviceHTML }
+            } 
+            $Null = Invoke-NinjaOneRequest -Method PATCH -Path "device/$($UpdateDevice.id)/custom-fields" -InputObject $DeviceUpdate
+        }
+        
     }
 
     Write-Output "$(Get-Date): Complete Total Runtime: $((New-TimeSpan -Start $Start -End (Get-Date)).TotalSeconds) seconds"
