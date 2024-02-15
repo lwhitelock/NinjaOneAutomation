@@ -9,14 +9,18 @@ $CloudFlareToken = Ninja-Property-Get cloudflareToken
 
 try {
 
-    if (!(Get-Module -Name "NinjaOneDocs")) {
-        $Null = Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
-        Install-Module -Name 'NinjaOneDocs' -Force -MinimumVersion 1.1.0
-        Import-Module 'NinjaOneDocs'
+     $moduleName = "NinjaOneDocs"
+    if (-not (Get-Module -ListAvailable -Name $moduleName)) {
+        Install-Module -Name $moduleName -Force -AllowClobber
     } else {
-        Update-Module NinjaOneDocs -Force
-        Import-Module 'NinjaOneDocs'
+        $latestVersion = (Find-Module -Name $moduleName).Version
+        $installedVersion = (Get-Module -ListAvailable -Name $moduleName).Version | Sort-Object -Descending | Select-Object -First 1
+
+        if ($installedVersion -ne $latestVersion) {
+            Update-Module -Name $moduleName -Force
+        }
     }
+    Import-Module $moduleName
 
     $BaseURL = 'https://api.cloudflare.com/client/v4'
 
