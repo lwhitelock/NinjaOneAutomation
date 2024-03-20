@@ -4,13 +4,13 @@
 # Please note this is not an official NinjaOne Script, please report any problems in GitHub
 # https://github.com/lwhitelock/NinjaOneAutomation/issues
 
-# Create a machine to machine API application with montitoring and management enabled and client_credentials enabled.
+# Create a machine to machine API application with monitoring and management enabled and client_credentials enabled.
 # Set the ID and Secret here: 
-$Script:ClientID = 'Your NinjaOne Client Application ID'
-$Script:Secret = 'Your NinjaOne Client Application Secret'
+$Script:ClientID = 'Jjl1_XoJYFeMPnDnBzmiu0m4oZo'
+$Script:Secret = 'j96EO5H2H89GRRTO6X4PEZP6oSR9ssBEYONoDXLOIWCUeI5-tZdt3A'
 
 # Set the NinjaOne Instance you use eg eu.ninjarmm.com, app.ninjarmm.com, ca.ninjarmm.com, oc.ninjarmm.com
-$Script:Instance = 'app.ninjarmm.com'
+$Script:Instance = 'eu.ninjarmm.com'
 
 # Set the board ID to fetch tickets from. By default 2 is the All Tickets Board. 
 # Please make sure the board you select has Ticket ID, Last Updated, and Tracked Time fields enabled.
@@ -252,7 +252,8 @@ function Connect-NinjaOne {
 function Get-NinjaRequest($Path, $Method, $Body) {
     if ($Body) {
         Return (Invoke-WebRequest -uri "https://$($Instance)$($Path)" -Method $Method -Headers $Script:AuthHeader -ContentType 'application/json' -Body $Body).content | ConvertFrom-Json    
-    } else {
+    }
+    else {
         Return (Invoke-WebRequest -uri "https://$($Instance)$($Path)" -Method $Method -Headers $Script:AuthHeader -ContentType 'application/json').content | ConvertFrom-Json
     }
 }
@@ -298,7 +299,8 @@ Function Get-NinjaOneTickets($FromUnix, $ToUnix) {
         $FetchedTickets = Get-NinjaTickets -LastCursor $LastCursor -PageSize 1000
         if (($FetchedTickets.data[-1].lastUpdated -lt $FromUnix) -or (($FetchedTickets.data | Measure-Object).count -eq 0)) {
             $Found = $True
-        } else {
+        }
+        else {
             $LastCursor = $FetchedTickets.metadata.lastCursorId
         }
         $FetchedTickets.data
@@ -317,7 +319,8 @@ Function Get-NinjaOneTickets($FromUnix, $ToUnix) {
         $Ticket = Get-NinjaRequest -Path "/v2/ticketing/ticket/$($TicketItem.id)" -Method GET
         if ($TicketItem.totalTimeTracked -gt 0) {
             $TicketLogs = Get-NinjaRequest -Path "/v2/ticketing/ticket/$($TicketItem.id)/log-entry" -Method GET
-        } else {
+        }
+        else {
             $TicketLogs = $null
         }
     
@@ -325,7 +328,8 @@ Function Get-NinjaOneTickets($FromUnix, $ToUnix) {
         $TimeEntryUsers = ($TicketLogs | Where-Object { $_.timeTracked -gt 0 } | Select-Object -unique appUserContactUid).appUserContactUid
         if (($TimeEntryUsers | measure-object).count -eq 1 ) {
             $TimeEntryUser = $TimeEntryUsers
-        } else {
+        }
+        else {
             $TimeEntryUser = $Null
         }
     
@@ -582,7 +586,8 @@ function Set-NinjaUserMap ($ID, $UID) {
         $UpdateUserMap.ID = $UserDetails.id
         $UpdateUserMap.Name = "$($UserDetails.firstName) $($UserDetails.lastName)"
         $UpdateUserMap.Email = $UserDetails.email
-    } else {
+    }
+    else {
         $Script:UserMap.add(
             [PSCustomObject]@{
                 ID    = $UserDetails.id
@@ -705,13 +710,9 @@ function Get-SummaryContent {
 
 ################################################################## Start of Script ##################################################################
 
-
-
 $script:epoch = Get-Date -Year 1970 -Month 1 -Day 1 -Hour 0 -Minute 0 -Second 0 -Millisecond 0
 [System.Collections.Generic.List[String]]$Script:OrgReportHTML = @()
 [PSCustomObject]$Script:ChartData = @{}
-
-
 
 Add-Type -AssemblyName System.Windows.Forms
 
@@ -751,8 +752,6 @@ $htmlLabel.Width = 200
 $htmlLabel.Location = New-Object System.Drawing.Point(20, 40)
 $form.Controls.Add($htmlLabel)
 
-
-
 # Create the label for the select list
 $selectLabel = New-Object System.Windows.Forms.Label
 $selectLabel.Text = "Select the techncian:"
@@ -773,9 +772,6 @@ $comboBox.Location = New-Object System.Drawing.Point(($webBrowserWidth + 40), ($
 $comboBox.Width = $comboBoxWidth
 $comboBox.DropDownStyle = [System.Windows.Forms.ComboBoxStyle]::DropDownList
 $comboBox.FlatStyle = [System.Windows.Forms.FlatStyle]::Flat
-
-
-
 
 # Adjust 'Next' Button position
 $nextButton = New-Object System.Windows.Forms.Button
@@ -1023,7 +1019,8 @@ $loginButton.Add_Click({
 
         if ($Script:ContentCount -ne 0 ) {
             Get-TechContent
-        } else {
+        }
+        else {
             Get-SummaryContent
         }
        
@@ -1091,7 +1088,8 @@ $nextButton.Add_Click({
         # If there's another content set, load it, otherwise close the form
         if ($script:currentContentIndex -lt $Script:contents.Count) {
             Get-TechContent
-        } else {
+        }
+        else {
             Get-SummaryContent
         }
 
