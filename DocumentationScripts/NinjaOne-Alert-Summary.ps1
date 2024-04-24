@@ -80,6 +80,7 @@ try {
 
     $moduleName = "NinjaOneDocs"
     if (-not (Get-Module -ListAvailable -Name $moduleName)) {
+        $Null = Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
         Install-Module -Name $moduleName -Force -AllowClobber
     } else {
         $latestVersion = (Find-Module -Name $moduleName).Version
