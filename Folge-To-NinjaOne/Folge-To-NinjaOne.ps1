@@ -247,7 +247,12 @@ function Invoke-FolgeToNinjaKB ($FolgeDocument, $FolgeDocPath, $ImportMode, $Org
         <table>
         <tbody>
         <tr><td><h1>$($StepIndex)) $($Step.title)</h1></td></tr>
-        <tr><td><img src="cid:$(($ImageIDs | Where-Object {$_.filename -eq $Step.screenshotFilename}).contentId)"></img></td></tr>
+        $(if ($ImageIDs | Where-Object {$_.filename -eq $Step.screenshotFilename}) {
+        $contentId = ($ImageIDs | Where-Object {$_.filename -eq $Step.screenshotFilename}).contentId
+            if ($contentId) {
+        "<tr><td><img src='cid:$contentId'></img></td></tr>"
+            }
+            })
         $(if ($Step.Description){"<tr><td><p>$($Step.description)</p></td></tr>"})
         </tbody>
         </table>
