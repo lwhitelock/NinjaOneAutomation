@@ -218,7 +218,7 @@ Foreach ($OrgSubscriptions in $Subscriptions | Group-Object companyId) {
         if (($Product | measure-object).count -ne 1) {
             $FetchedProduct = Invoke-Pax8Request -method get -resource "products/$($Subscription.productId)"
             if (($FetchedProduct | measure-object).count -ne 1) {
-                Write-Error "Product $($Pax8Sub.productId) not found in Pax8"
+                Write-Error "Product $($Subscription.productId) not found in Pax8"
                 continue
             }
             $Pax8Products.add($FetchedProduct)
@@ -234,6 +234,7 @@ Foreach ($OrgSubscriptions in $Subscriptions | Group-Object companyId) {
         }
 
         # Populate the term settings if Pax8 returns a commitment
+		$TermSettings = $Null
         if ($Subscription.commitment) {
             $TermSettings = switch ($Subscription.commitment.term) {
                 'Monthly' { @{renewalUnit = 'MONTH'; value = 1; expirationDate = (Get-NinjaOneTime -Date $Subscription.commitment.endDate); autoRenewal = $True } }
