@@ -6,14 +6,14 @@
 # Set if you would like to include the NinjaOne Organization in the license name or not
 $IncludeOrganizationName = $True
 
-# If your company names do not match in Pax8 and NinjaOne you can specify the overriden names here. If they do match this can be left as $NameOverride = @()
+# If your company names do not match in TD Synnex and NinjaOne you can specify the overriden names here. If they do match this can be left as $NameOverride = @()
 $NameOverride = @(
     @{  
-        Pax8Name     = 'Company 1 Ltd'
+        TDSynnexName     = 'Company 1 Ltd'
         NinjaOneName = 'Company 1' 
     },
     @{  
-        Pax8Name     = 'Example Customer'
+        TDSynnexName     = 'Example Customer'
         NinjaOneName = 'Example Organization' 
     }
 )
