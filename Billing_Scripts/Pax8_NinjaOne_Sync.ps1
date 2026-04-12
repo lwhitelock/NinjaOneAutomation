@@ -29,6 +29,8 @@ $ClientID = Ninja-Property-Get ninjaoneClientId
 $Secret = Ninja-Property-Get ninjaoneClientSecret
 $NinjaInstance = Ninja-Property-Get ninjaoneInstance
 
+$ProgressPreference = 'SilentlyContinue'
+
 #### Functions ####
 
 function Connect-Pax8 {
@@ -51,7 +53,7 @@ function Connect-Pax8 {
     $json = $auth | ConvertTo-json -Depth 2
 
     try {
-        $Response = Invoke-WebRequest -Method POST -Uri 'https://login.pax8.com/oauth/token' -ContentType 'application/json' -Body $json
+        $Response = Invoke-WebRequest -UseBasicParsing -Method POST -Uri 'https://login.pax8.com/oauth/token' -ContentType 'application/json' -Body $json
         $script:Pax8Token = ($Response | ConvertFrom-Json).access_token
     }
     catch {
@@ -83,14 +85,14 @@ function Invoke-Pax8Request {
 
         try {
             if (($Method -eq "put") -or ($Method -eq "post") -or ($Method -eq "delete")) {
-                $Response = Invoke-WebRequest -Method $method -Uri ('https://api.pax8.com/v1/' + $Resource) -ContentType 'application/json' -Body $Body -Headers $headers -ea stop
+                $Response = Invoke-WebRequest -UseBasicParsing -Method $method -Uri ('https://api.pax8.com/v1/' + $Resource) -ContentType 'application/json' -Body $Body -Headers $headers -ea stop
                 $Result = $Response | ConvertFrom-Json
             }
             else {
                 $Complete = $false
                 $PageNo = 0
                 $Result = do {
-                    $Response = Invoke-WebRequest -Method $method -Uri ('https://api.pax8.com/v1/' + $Resource + "?page=$PageNo&size=200" + $ResourceFilter) -ContentType 'application/json' -Headers $headers -ea stop
+                    $Response = Invoke-WebRequest -UseBasicParsing -Method $method -Uri ('https://api.pax8.com/v1/' + $Resource + "?page=$PageNo&size=200" + $ResourceFilter) -ContentType 'application/json' -Headers $headers -ea stop
                     $JSON = $Response.content | ConvertFrom-Json
                     if ($JSON.Page) {
                         if (($JSON.Page.totalPages - 1) -eq $PageNo -or $JSON.Page.totalPages -eq 0) {
@@ -113,7 +115,7 @@ function Invoke-Pax8Request {
                 $Result = Invoke-Pax8Request -Method $Method -Resource $Resource -ResourceFilter $ResourceFilter -Body $Body
             }
             else {
-                Write-Error "An Error Occured $($_) "
+                Write-Host "Error: An Error Occured $($_) "
             }
         }
 		
@@ -182,14 +184,14 @@ $AuthBody = @{
     'scope'         = 'monitoring management' 
 }
 
-$Result = Invoke-WebRequest -uri "https://$($NinjaInstance)/ws/oauth/token" -Method POST -Body $AuthBody -ContentType 'application/x-www-form-urlencoded'
+$Result = Invoke-WebRequest -UseBasicParsing -uri "https://$($NinjaInstance)/ws/oauth/token" -Method POST -Body $AuthBody -ContentType 'application/x-www-form-urlencoded'
 
 $NinjaAuthHeader = @{
     'Authorization' = "Bearer $(($Result.content | ConvertFrom-Json).access_token)"
 }
 
 # Fetch Orgs from NinjaOne
-$NinjaOneOrgs = (Invoke-WebRequest -uri "https://$($NinjaInstance)/api/v2/organizations" -Method GET -Headers $NinjaAuthHeader -ContentType 'application/json' -ea stop).content | ConvertFrom-Json -depth 100
+$NinjaOneOrgs = (Invoke-WebRequest -UseBasicParsing -uri "https://$($NinjaInstance)/api/v2/organizations" -Method GET -Headers $NinjaAuthHeader -ContentType 'application/json' -ea stop).content | ConvertFrom-Json
 
 # Loop through all subscriptions per customer and update in NinjaOne
 Foreach ($OrgSubscriptions in $Subscriptions | Group-Object companyId) {
@@ -208,7 +210,7 @@ Foreach ($OrgSubscriptions in $Subscriptions | Group-Object companyId) {
 
     # Match the overriden name to Organizations in NinjaOne and skip if not matched.
     if ($OrganizationName -notin $NinjaOneOrgs.name) {
-        Write-Error "'$($OrganizationName)' did not match an Organization in NinjaOne. Please create them in NinjaOne or update the Name Override settings in the script to map to the correct Organization"
+        Write-Host "Error: '$($OrganizationName)' did not match an Organization in NinjaOne. Please create them in NinjaOne or update the Name Override settings in the script to map to the correct Organization"
         continue
     }
 
@@ -218,7 +220,7 @@ Foreach ($OrgSubscriptions in $Subscriptions | Group-Object companyId) {
         if (($Product | measure-object).count -ne 1) {
             $FetchedProduct = Invoke-Pax8Request -method get -resource "products/$($Subscription.productId)"
             if (($FetchedProduct | measure-object).count -ne 1) {
-                Write-Error "Product $($Subscription.productId) not found in Pax8"
+                Write-Host "Error: Product $($Pax8Sub.productId) not found in Pax8"
                 continue
             }
             $Pax8Products.add($FetchedProduct)
@@ -234,7 +236,6 @@ Foreach ($OrgSubscriptions in $Subscriptions | Group-Object companyId) {
         }
 
         # Populate the term settings if Pax8 returns a commitment
-		$TermSettings = $Null
         if ($Subscription.commitment) {
             $TermSettings = switch ($Subscription.commitment.term) {
                 'Monthly' { @{renewalUnit = 'MONTH'; value = 1; expirationDate = (Get-NinjaOneTime -Date $Subscription.commitment.endDate); autoRenewal = $True } }
@@ -267,23 +268,23 @@ Foreach ($OrgSubscriptions in $Subscriptions | Group-Object companyId) {
 
         # Perform the upsert
         try {
-            $NinjaOneLicense = (Invoke-WebRequest -uri "https://$($NinjaInstance)/api/v2/software-license/upsert" -Method POST -Headers $NinjaAuthHeader -Body $CreateUpdateLicense -ContentType 'application/json' -ea stop).content | ConvertFrom-Json -depth 100
+            $NinjaOneLicense = (Invoke-WebRequest -UseBasicParsing -uri "https://$($NinjaInstance)/api/v2/software-license/upsert" -Method POST -Headers $NinjaAuthHeader -Body $CreateUpdateLicense -ContentType 'application/json' -ea stop).content | ConvertFrom-Json
             Write-Host "Created / updated license $($LicenseName) for $($OrganizationName)"
         }
         catch {
-            Write-Error "Failed to create / update license $($LicenseName) for $($OrganizationName): $($_)"
+            Write-Host "Error: Failed to create / update license $($LicenseName) for $($OrganizationName): $($_)"
         }
 
         # NinjaOne doesn't currently support the term through upsert so if we have a term it will need to be manually set. This can be removed when Ninja adds term support to upsert.
         if ($Subscription.commitment -and $Null -ne $TermSettings) {
             $NinjaOneLicense.term = $TermSettings
             try {
-                $NinjaOneLicense = (Invoke-WebRequest -uri "https://$($NinjaInstance)/api/v2/software-license/$($NinjaOneLicense.id)" -Method PUT -Headers $NinjaAuthHeader -Body ($NinjaOneLicense | ConvertTo-Json) -ContentType 'application/json' -ea stop).content | ConvertFrom-Json -depth 100
+                $NinjaOneLicense = (Invoke-WebRequest -UseBasicParsing -uri "https://$($NinjaInstance)/api/v2/software-license/$($NinjaOneLicense.id)" -Method PUT -Headers $NinjaAuthHeader -Body ($NinjaOneLicense | ConvertTo-Json) -ContentType 'application/json' -ea stop).content | ConvertFrom-Json
                 Write-Host "Term settings updated for $($LicenseName) for $($OrganizationName)"
             }
             catch {
                 ($NinjaOneLicense | ConvertTo-Json)
-                Write-Error "Failed to set term for license $($LicenseName) for $($OrganizationName): $($_)"
+                Write-Host "Error: Failed to set term for license $($LicenseName) for $($OrganizationName): $($_)"
             }
         }
 
