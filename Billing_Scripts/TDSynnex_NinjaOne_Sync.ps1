@@ -6,14 +6,14 @@
 # Set if you would like to include the NinjaOne Organization in the license name or not
 $IncludeOrganizationName = $True
 
-# If your company names do not match in TD Synnex and NinjaOne you can specify the overriden names here. If they do match this can be left as $NameOverride = @()
+# If your company names do not match in Pax8 and NinjaOne you can specify the overriden names here. If they do match this can be left as $NameOverride = @()
 $NameOverride = @(
     @{  
-        TDSynnexName     = 'Company 1 Ltd'
+        Pax8Name     = 'Company 1 Ltd'
         NinjaOneName = 'Company 1' 
     },
     @{  
-        TDSynnexName     = 'Example Customer'
+        Pax8Name     = 'Example Customer'
         NinjaOneName = 'Example Organization' 
     }
 )
@@ -241,7 +241,7 @@ Foreach ($OrgSubscriptions in $TDSSubscriptions | Group-Object customerName) {
             quantity      = $Subscription.subscriptionTotalLicenses
             currentUsage  = $Subscription.subscriptionTotalLicenses
             costMode      = 'PER_LICENSE'
-            cost          = $Subscription.cost
+            cost          = [math]::Round($Subscription.cost, 2)
             term          = $TermSettings
         } | ConvertTo-Json
 
@@ -252,17 +252,7 @@ Foreach ($OrgSubscriptions in $TDSSubscriptions | Group-Object customerName) {
         catch {
             Write-Host "Error: Failed to create / update license $($LicenseName) for $($OrganizationName): $($_)"
         }
-
-        $NinjaOneLicense.term = $TermSettings
-        try {
-            $NinjaOneLicense = (Invoke-WebRequest -UseBasicParsing -uri "https://$($NinjaInstance)/api/v2/software-license/$($NinjaOneLicense.id)" -Method PUT -Headers $NinjaAuthHeader -Body ($NinjaOneLicense | ConvertTo-Json) -ContentType 'application/json' -ea stop).content | ConvertFrom-Json
-            Write-Host "Term settings updated for $($LicenseName) for $($OrganizationName)"
-        }
-        catch {
-            ($NinjaOneLicense | ConvertTo-Json)
-            Write-Host "Error: Failed to set term for license $($LicenseName) for $($OrganizationName): $($_)"
-        }
-        
+       
 
     }
         
