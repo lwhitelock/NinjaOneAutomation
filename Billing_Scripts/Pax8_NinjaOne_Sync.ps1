@@ -6,7 +6,6 @@
 # Set if you would like to include the NinjaOne Organization in the license name or not
 $IncludeOrganizationName = $True
 
-
 # If your company names do not match in Pax8 and NinjaOne you can specify the overriden names here. If they do match this can be left as $NameOverride = @()
 $NameOverride = @(
     @{  
@@ -262,7 +261,7 @@ Foreach ($OrgSubscriptions in $Subscriptions | Group-Object companyId) {
             quantity      = $Subscription.quantity
             currentUsage  = $Subscription.quantity
             costMode      = 'PER_LICENSE'
-            cost          = $Subscription.partnerCost
+            cost          = [math]::Round($Subscription.partnerCost, 2)
             term          = $TermSettings
         } | ConvertTo-Json
 
@@ -273,19 +272,6 @@ Foreach ($OrgSubscriptions in $Subscriptions | Group-Object companyId) {
         }
         catch {
             Write-Host "Error: Failed to create / update license $($LicenseName) for $($OrganizationName): $($_)"
-        }
-
-        # NinjaOne doesn't currently support the term through upsert so if we have a term it will need to be manually set. This can be removed when Ninja adds term support to upsert.
-        if ($Subscription.commitment -and $Null -ne $TermSettings) {
-            $NinjaOneLicense.term = $TermSettings
-            try {
-                $NinjaOneLicense = (Invoke-WebRequest -UseBasicParsing -uri "https://$($NinjaInstance)/api/v2/software-license/$($NinjaOneLicense.id)" -Method PUT -Headers $NinjaAuthHeader -Body ($NinjaOneLicense | ConvertTo-Json) -ContentType 'application/json' -ea stop).content | ConvertFrom-Json
-                Write-Host "Term settings updated for $($LicenseName) for $($OrganizationName)"
-            }
-            catch {
-                ($NinjaOneLicense | ConvertTo-Json)
-                Write-Host "Error: Failed to set term for license $($LicenseName) for $($OrganizationName): $($_)"
-            }
         }
 
     }
