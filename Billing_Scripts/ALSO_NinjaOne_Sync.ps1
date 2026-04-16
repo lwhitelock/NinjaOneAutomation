@@ -258,7 +258,7 @@ foreach ($Company in $ALSOCompanies) {
             quantity      = $Quantity
             currentUsage  = $Quantity
             costMode      = 'PER_LICENSE'
-            cost          = $Subscription.PriceableItems[0].PurchasePrice
+            cost          = [math]::Round(($Subscription.PriceableItems[0].PurchasePrice), 2)
             term          = $TermSettings
         } | ConvertTo-Json
 
@@ -271,16 +271,6 @@ foreach ($Company in $ALSOCompanies) {
             Write-Host "Error: Failed to create / update license $($LicenseName) for $($OrganizationName): $($_.message)"
         }
 
-        # NinjaOne doesn't currently support the term through upsert so if we have a term it will need to be manually set. This can be removed when Ninja adds term support to upsert.
-        try {
-            $NinjaOneLicense.term = $TermSettings
-            $NinjaOneLicense = (Invoke-WebRequest -UseBasicParsing -uri "https://$($NinjaInstance)/api/v2/software-license/$($NinjaOneLicense.id)" -Method PUT -Headers $NinjaAuthHeader -Body ($NinjaOneLicense | ConvertTo-Json) -ContentType 'application/json' -ea stop).content | ConvertFrom-Json
-            Write-Host "Term settings updated for $($LicenseName) for $($OrganizationName)"
-        }
-        catch {
-            ($NinjaOneLicense | ConvertTo-Json)
-            Write-Host "Error: Failed to set term for license $($LicenseName) for $($OrganizationName): $($_.message)"
-        }
 
     }
 
